@@ -1,0 +1,59 @@
+{
+ "variables": {
+    "version": "{{env `version`}}",
+    "resource_group": "{{env `RESOURCE_GRP`}}",
+    "azure_location": "{{env `RESOURCE_GROUP_LOC`}}",
+    "vnet_name": "{{env `VNET_NAME`}}",
+    "vnet_rg": "{{env `VNET_RG`}}",
+    "vnet_subnet":"{{env `VNET_SUBNET`}}",
+    "source_image_name": "if-{{env `flavor`}}-temp-{{env `version`}}",
+    "final_image_name": "if-{{env `flavor`}}-{{env `version`}}",
+    "WINRM_USERNAME": "ifuser"
+ },
+  "builders": [
+    {
+    "type": "azure-arm",
+
+    "managed_image_name":"{{user `final_image_name`}}",
+    "managed_image_resource_group_name":"{{user `resource_group`}}",
+
+    "custom_managed_image_name":"{{user `source_image_name`}}",
+    "custom_managed_image_resource_group_name":"{{user `resource_group`}}",
+
+    "virtual_network_name":"{{user `vnet_name`}}",
+    "virtual_network_resource_group_name":"{{user `vnet_rg`}}",
+    "virtual_network_subnet_name":"{{user `vnet_subnet`}}",
+    "private_virtual_network_with_public_ip":true,
+    "os_type": "Windows",
+    "communicator": "winrm",
+    "winrm_timeout": "30m",
+    "winrm_username": "{{user `WINRM_USERNAME`}}",
+    "winrm_use_ssl": "true",
+    "winrm_insecure": "true",
+
+    "cloud_environment_name": "AzureUSGovernmentCloud",
+    "build_resource_group_name" : "packerwin",
+
+    "azure_tags": {
+      "Name": "{{user `final_image_name`}}",
+      "owner": "Image Factory",
+      "image_description": "{{user `final_image_name`}}"
+    },
+
+
+    "vm_size": "Standard_D3_v2",
+    "async_resourcegroup_delete": true
+    }
+  ],  
+  "provisioners": [
+
+    {
+      "type": "powershell",
+      "inline": [
+        "if( Test-Path $Env:SystemRoot\\windows\\system32\\Sysprep\\unattend.xml ){ rm $Env:SystemRoot\\windows\\system32\\Sysprep\\unattend.xml -Force}",
+        "& $Env:SystemRoot\\System32\\Sysprep\\Sysprep.exe /oobe /generalize /quit",
+        "echo 'waiting for deprovisioning'"
+      ]
+    }
+  ]
+}
